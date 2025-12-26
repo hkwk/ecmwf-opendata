@@ -45,10 +45,48 @@
 //! # Ok::<(), ecmwf_opendata::Error>(())
 //! ```
 //!
+//! **Macro (closest to Python `client.retrieve(time=..., ...)`)**
+//! ```no_run
+//! use ecmwf_opendata::{retrieve, Client, ClientOptions};
+//!
+//! let client = Client::new(ClientOptions::default())?;
+//! let steps: Vec<i32> = (12..=360).step_by(12).collect();
+//!
+//! let result = retrieve!(
+//!     client,
+//!     time = 0,
+//!     stream = "enfo",
+//!     type = "ep",
+//!     step = steps,
+//!     param = ["tpg1", "tpg5", "10fgg10"],
+//!     target = "data.grib2",
+//! )?;
+//! println!("{}", result.datetime);
+//! # Ok::<(), ecmwf_opendata::Error>(())
+//! ```
+//!
+//! **GUI/config style (string key/value pairs)**
+//! ```no_run
+//! use ecmwf_opendata::{Client, ClientOptions, Request};
+//!
+//! let client = Client::new(ClientOptions::default())?;
+//! let req = Request::from_str_pairs([
+//!     ("time", "0"),
+//!     ("stream", "enfo"),
+//!     ("type", "ep"),
+//!     ("step", "12,24,36"),
+//!     ("param", "tpg1,tpg5,10fgg10"),
+//!     ("target", "data.grib2"),
+//! ]);
+//! let _ = client.retrieve_request(req)?;
+//! # Ok::<(), ecmwf_opendata::Error>(())
+//! ```
+//!
 //! Notes:
 //! - Downloads are governed by ECMWF Open Data terms (e.g. attribution requirements).
 //! - Network conditions vary by mirror/source; if `latest()` cannot be established,
 //!   specify `date`/`time` explicitly in your request.
+//! - In line with the upstream Python client, omitting `step` means “retrieve all available steps”.
 
 mod client;
 mod date;
