@@ -120,6 +120,61 @@ impl<const N: usize> From<[usize; N]> for RequestValue {
 }
 
 impl RequestValue {
+    /// Parse a user-provided string into a best-effort [`RequestValue`].
+    ///
+    /// This is designed for GUI / config-file inputs where everything starts as a string.
+    ///
+    /// Rules (intentionally simple):
+    /// - `"240"` -> `Int(240)`
+    /// - `"a,b,c"` -> `StrList([..])`
+    /// - `"1,10,20"` -> `IntList([..])`
+    /// - `"[1, 10, 20]"` -> `IntList([..])`
+    /// - Otherwise -> `Str(..)`
+    ///
+    /// Note: range syntaxes like `"0/to/144/by/3"` or `"0-24"` are kept as strings;
+    /// expansion happens later during request normalization.
+    pub fn parse_auto(s: &str) -> Self {
+        let mut t = s.trim();
+        if t.starts_with('[') && t.ends_with(']') && t.len() >= 2 {
+            t = &t[1..t.len() - 1];
+            t = t.trim();
+        }
+
+        if t.contains(',') {
+            let items: Vec<&str> = t.split(',').map(|x| x.trim()).filter(|x| !x.is_empty()).collect();
+            if items.is_empty() {
+                return RequestValue::Str(String::new());
+            }
+
+            let mut all_int = true;
+            let mut ints: Vec<i64> = Vec::with_capacity(items.len());
+            let mut strs: Vec<String> = Vec::with_capacity(items.len());
+
+            for it in &items {
+                if let Ok(v) = it.parse::<i64>() {
+                    ints.push(v);
+                } else {
+                    all_int = false;
+                    strs.push(it.to_string());
+                }
+            }
+
+            if all_int {
+                RequestValue::IntList(ints)
+            } else {
+                // If mixed (e.g. steps like "0-24"), keep everything as strings.
+                if strs.len() != items.len() {
+                    strs = items.into_iter().map(|x| x.to_string()).collect();
+                }
+                RequestValue::StrList(strs)
+            }
+        } else if let Ok(v) = t.parse::<i64>() {
+            RequestValue::Int(v)
+        } else {
+            RequestValue::Str(t.to_string())
+        }
+    }
+
     pub fn as_strings(&self) -> Vec<String> {
         match self {
             RequestValue::Str(s) => vec![s.clone()],
@@ -158,6 +213,20 @@ impl Request {
         let mut r = Self::new();
         for (k, v) in pairs {
             r = r.kw(k, v);
+        }
+        r
+    }
+
+    /// Construct a request from string pairs (typical for GUI/config inputs).
+    /// Values are parsed with [`RequestValue::parse_auto`].
+    pub fn from_str_pairs<K, V>(pairs: impl IntoIterator<Item = (K, V)>) -> Self
+    where
+        K: Into<String>,
+        V: AsRef<str>,
+    {
+        let mut r = Self::new();
+        for (k, v) in pairs {
+            r = r.kw(k, RequestValue::parse_auto(v.as_ref()));
         }
         r
     }
@@ -242,6 +311,45 @@ impl Request {
 
     pub(crate) fn from_inner(inner: BTreeMap<String, RequestValue>) -> Self {
         Self { inner }
+    }
+}
+
+#[cfg(test)]
+mod parse_tests {
+    use super::{Request, RequestValue};
+
+    #[test]
+    fn parse_auto_int_and_string() {
+        assert_eq!(RequestValue::parse_auto("240"), RequestValue::Int(240));
+        assert_eq!(RequestValue::parse_auto("msl"), RequestValue::Str("msl".to_string()));
+    }
+
+    #[test]
+    fn parse_auto_lists() {
+        assert_eq!(
+            RequestValue::parse_auto("1,10,20"),
+            RequestValue::IntList(vec![1, 10, 20])
+        );
+        assert_eq!(
+            RequestValue::parse_auto("[1, 10, 20]"),
+            RequestValue::IntList(vec![1, 10, 20])
+        );
+        assert_eq!(
+            RequestValue::parse_auto("2t,msl"),
+            RequestValue::StrList(vec!["2t".to_string(), "msl".to_string()])
+        );
+        // Keep step ranges as strings.
+        assert_eq!(
+            RequestValue::parse_auto("0-24,12-36"),
+            RequestValue::StrList(vec!["0-24".to_string(), "12-36".to_string()])
+        );
+    }
+
+    #[test]
+    fn from_str_pairs_builds_request() {
+        let r = Request::from_str_pairs([("step", "12,24,36"), ("param", "msl")]);
+        assert_eq!(r.get("step"), Some(&RequestValue::IntList(vec![12, 24, 36])));
+        assert_eq!(r.get("param"), Some(&RequestValue::Str("msl".to_string())));
     }
 }
 

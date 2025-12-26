@@ -121,6 +121,31 @@ println!("{}", result.datetime);
 # Ok::<(), ecmwf_opendata::Error>(())
 ```
 
+### 5）GUI/配置场景：字符串 key/value 输入
+
+如果你的 UI（或配置文件）把值都当作字符串保存，可以用 `Request::from_str_pairs` 来构造 request。
+
+```rust
+use ecmwf_opendata::{Client, ClientOptions, Request};
+
+let client = Client::new(ClientOptions::default())?;
+
+// 示例：值来自文本框
+let req = Request::from_str_pairs([
+    ("time", "0"),
+    ("stream", "enfo"),
+    ("type", "ep"),
+    ("step", "12,24,36"),
+    ("levelist", "850"),
+    ("param", "tpg1,tpg5,10fgg10"),
+    ("target", "data.grib2"),
+]);
+
+let result = client.retrieve_request(req)?;
+println!("{}", result.datetime);
+# Ok::<(), ecmwf_opendata::Error>(())
+```
+
 ## CLI
 
 仓库里也包含一个简单 CLI 示例：

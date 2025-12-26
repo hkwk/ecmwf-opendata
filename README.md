@@ -121,6 +121,31 @@ println!("{}", result.datetime);
 # Ok::<(), ecmwf_opendata::Error>(())
 ```
 
+### 5) GUI/config style: string key/value inputs
+
+If your UI stores values as strings, build a request with `Request::from_str_pairs`.
+
+```rust
+use ecmwf_opendata::{Client, ClientOptions, Request};
+
+let client = Client::new(ClientOptions::default())?;
+
+// Example: values come from text fields
+let req = Request::from_str_pairs([
+    ("time", "0"),
+    ("stream", "enfo"),
+    ("type", "ep"),
+    ("step", "12,24,36"),
+    ("levelist", "850"),
+    ("param", "tpg1,tpg5,10fgg10"),
+    ("target", "data.grib2"),
+]);
+
+let result = client.retrieve_request(req)?;
+println!("{}", result.datetime);
+# Ok::<(), ecmwf_opendata::Error>(())
+```
+
 ## CLI
 
 This repository also includes a small CLI example (as a Cargo example target).
