@@ -2,6 +2,8 @@
 
 Rust client for ECMWF Open Data.
 
+API documentation (docs.rs): https://docs.rs/ecmwf-opendata
+
 This crate is a Rust re-implementation of the *core* functionality of the upstream Python project `ecmwf-opendata`:
 
 - Build **MARS-like requests** (keyword/value pairs)

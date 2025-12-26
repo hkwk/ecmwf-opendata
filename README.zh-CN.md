@@ -2,6 +2,8 @@
 
 ECMWF Open Data 的 Rust 客户端。
 
+API 文档（docs.rs）：https://docs.rs/ecmwf-opendata
+
 本 crate 参考并对齐了上游 Python 项目 `ecmwf-opendata` 的**核心思路**：
 
 - 用类似 MARS 的方式用「关键字/值」来表达 request
