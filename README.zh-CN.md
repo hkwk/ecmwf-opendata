@@ -95,8 +95,8 @@ println!("{}", result.datetime);
 仓库里也包含一个简单 CLI 示例：
 
 ```bash
-cargo run -- retrieve data.grib2
-cargo run -- download data.grib2
+cargo run --example cli -- retrieve data.grib2
+cargo run --example cli -- download data.grib2
 ```
 
 ## 说明 / 限制

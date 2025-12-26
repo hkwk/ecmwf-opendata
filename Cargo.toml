@@ -2,6 +2,7 @@
 name = "ecmwf-opendata"
 version = "0.1.1"
 edition = "2024"
+autobins = false
 description = "Rust client for ECMWF Open Data (MARS-like requests, URL resolution, and downloads including .index range selection)."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/hkwk/ecmwf-opendata"

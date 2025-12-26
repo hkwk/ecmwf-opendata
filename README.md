@@ -92,11 +92,11 @@ println!("{}", result.datetime);
 
 ## CLI
 
-This repository also includes a small CLI example.
+This repository also includes a small CLI example (as a Cargo example target).
 
 ```bash
-cargo run -- retrieve data.grib2
-cargo run -- download data.grib2
+cargo run --example cli -- retrieve data.grib2
+cargo run --example cli -- download data.grib2
 ```
 
 ## Notes / limitations
