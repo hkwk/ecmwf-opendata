@@ -60,3 +60,71 @@ mod url_builder;
 pub use crate::client::{Client, ClientOptions, Result};
 pub use crate::error::{Error, Result as EResult};
 pub use crate::request::{Request, RequestValue};
+
+/// Build a [`Request`] using a kwargs-like syntax.
+///
+/// Example:
+/// ```no_run
+/// use ecmwf_opendata::{request, Client, ClientOptions};
+///
+/// let client = Client::new(ClientOptions::default())?;
+/// let steps: Vec<i32> = (12..=360).step_by(12).collect();
+///
+/// let req = request!(
+///     time = 0,
+///     stream = "enfo",
+///     type = "ep",
+///     step = steps,
+///     levelist = 850,
+///     param = [
+///         "ptsa_gt_1stdev",
+///         "ptsa_gt_1p5stdev",
+///         "ptsa_gt_2stdev",
+///     ],
+///     target = "data.grib2",
+/// );
+///
+/// let _ = client.retrieve_request(req)?;
+/// # Ok::<(), ecmwf_opendata::Error>(())
+/// ```
+#[macro_export]
+macro_rules! request {
+	($($key:tt = $value:expr),+ $(,)?) => {{
+		let mut r = $crate::Request::new();
+		$(
+			let k0: &str = stringify!($key);
+			let k: &str = k0.strip_prefix("r#").unwrap_or(k0);
+			r = r.kw(k, $crate::RequestValue::from($value));
+		)+
+		r
+	}};
+}
+
+/// Python-like `client.retrieve(...)` convenience using kwargs-like syntax.
+///
+/// Example:
+/// ```no_run
+/// use ecmwf_opendata::{retrieve, Client, ClientOptions};
+///
+/// let client = Client::new(ClientOptions::default())?;
+/// let steps: Vec<i32> = (12..=360).step_by(12).collect();
+///
+/// let result = retrieve!(
+///     client,
+///     time = 0,
+///     stream = "enfo",
+///     type = "ep",
+///     step = steps,
+///     param = ["tpg1", "tpg5", "10fgg10"],
+///     target = "data.grib2",
+/// )?;
+/// println!("{}", result.datetime);
+/// # Ok::<(), ecmwf_opendata::Error>(())
+/// ```
+#[macro_export]
+macro_rules! retrieve {
+	($client:expr, $($key:tt = $value:expr),+ $(,)?) => {{
+		let req = $crate::request!($($key = $value),+);
+		$client.retrieve_request(req)
+	}};
+}

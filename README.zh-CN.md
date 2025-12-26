@@ -90,6 +90,37 @@ println!("{}", result.datetime);
 # Ok::<(), ecmwf_opendata::Error>(())
 ```
 
+### 4）宏：最接近 Python `client.retrieve(time=..., ...)`
+
+```rust
+use ecmwf_opendata::{Client, ClientOptions, retrieve};
+
+let client = Client::new(ClientOptions::default())?;
+
+let steps: Vec<i32> = (12..=360).step_by(12).collect();
+
+let result = retrieve!(
+    client,
+    time = 0,
+    stream = "enfo",
+    type = "ep",
+    step = steps,
+    levelist = 850,
+    param = [
+        "ptsa_gt_1stdev",
+        "ptsa_gt_1p5stdev",
+        "ptsa_gt_2stdev",
+        "ptsa_lt_1stdev",
+        "ptsa_lt_1p5stdev",
+        "ptsa_lt_2stdev",
+    ],
+    target = "data.grib2",
+)?;
+
+println!("{}", result.datetime);
+# Ok::<(), ecmwf_opendata::Error>(())
+```
+
 ## CLI
 
 仓库里也包含一个简单 CLI 示例：

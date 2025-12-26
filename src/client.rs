@@ -308,7 +308,6 @@ impl Client {
         params
             .entry("stream".to_string())
             .or_insert(RequestValue::Str("oper".to_string()));
-        params.entry("step".to_string()).or_insert(RequestValue::Int(0));
 
         // If date missing, resolve latest.
         if !params.contains_key("date") {
@@ -478,7 +477,7 @@ impl Client {
             .get("type")
             .cloned()
             .unwrap_or_else(|| vec!["fc".to_string()]);
-        let step_vals = for_urls.get("step").cloned().unwrap_or_else(|| vec!["0".to_string()]);
+        let step_vals_opt = for_urls.get("step").cloned();
         let fcmonth_vals = for_urls
             .get("fcmonth")
             .cloned()
@@ -505,7 +504,7 @@ impl Client {
                                     ty,
                                 );
 
-                                let is_monthly = s == "mmsa";
+                                let is_monthly = s == "mmsa" || s == "mmsf";
                                 let pattern = if is_monthly {
                                     MONTHLY_PATTERN
                                 } else {
@@ -534,7 +533,11 @@ impl Client {
                                         urls.push(self.fix_0p4_beta(u));
                                     }
                                 } else {
-                                    for step in &step_vals {
+                                    let steps_for_url: Vec<String> = match &step_vals_opt {
+                                        Some(v) => v.clone(),
+                                        None => vec![default_step_for_url(&patched_stream, ty, dt.hour())],
+                                    };
+                                    for step in &steps_for_url {
                                         let u = format_url(
                                             pattern,
                                             &self.base_url,
@@ -826,6 +829,58 @@ impl Client {
         let mut out = res.clone();
         out.size_bytes = total;
         Ok(out)
+    }
+}
+
+fn default_step_for_url(patched_stream: &str, typ: &str, hour: u32) -> String {
+    let is_00_12 = hour == 0 || hour == 12;
+    let is_hres = matches!(patched_stream, "oper" | "wave" | "scda" | "scwv");
+    let is_ens = matches!(patched_stream, "enfo" | "waef");
+
+    match (typ, is_ens, is_hres, is_00_12) {
+        // Probabilities are advertised for 00/12; the file step is the max horizon.
+        ("ep", true, _, _) => "360".to_string(),
+        ("ep", false, _, _) => "360".to_string(),
+
+        // Tropical cyclone tracks.
+        ("tf", true, _, true) => "240".to_string(),
+        ("tf", true, _, false) => "144".to_string(),
+        ("tf", false, _, true) => "240".to_string(),
+        ("tf", false, _, false) => "90".to_string(),
+
+        // HRES (deterministic).
+        ("fc", false, true, true) => "240".to_string(),
+        ("fc", false, true, false) => "90".to_string(),
+
+        // ENS (cf/pf/em/es) when stream is inferred to enfo/waef.
+        ("cf" | "pf" | "em" | "es", true, _, true) => "360".to_string(),
+        ("cf" | "pf" | "em" | "es", true, _, false) => "144".to_string(),
+
+        // Fallbacks.
+        (_, true, _, true) => "360".to_string(),
+        (_, true, _, false) => "144".to_string(),
+        (_, false, true, true) => "240".to_string(),
+        (_, false, true, false) => "90".to_string(),
+        _ => "240".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod client_tests {
+    use super::default_step_for_url;
+
+    #[test]
+    fn default_step_matches_readme_table() {
+        // HRES 00/12
+        assert_eq!(default_step_for_url("oper", "fc", 0), "240");
+        // HRES 06/18
+        assert_eq!(default_step_for_url("scda", "fc", 6), "90");
+        // ENS 00/12
+        assert_eq!(default_step_for_url("enfo", "pf", 0), "360");
+        // ENS 06/18
+        assert_eq!(default_step_for_url("enfo", "pf", 18), "144");
+        // Probabilities
+        assert_eq!(default_step_for_url("enfo", "ep", 0), "360");
     }
 }
 

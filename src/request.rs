@@ -65,6 +65,18 @@ impl From<Vec<&str>> for RequestValue {
     }
 }
 
+impl<const N: usize> From<[&str; N]> for RequestValue {
+    fn from(value: [&str; N]) -> Self {
+        RequestValue::StrList(value.into_iter().map(|s| s.to_string()).collect())
+    }
+}
+
+impl<const N: usize> From<[String; N]> for RequestValue {
+    fn from(value: [String; N]) -> Self {
+        RequestValue::StrList(value.into_iter().collect())
+    }
+}
+
 impl From<Vec<i64>> for RequestValue {
     fn from(value: Vec<i64>) -> Self {
         RequestValue::IntList(value)
@@ -77,8 +89,32 @@ impl From<Vec<i32>> for RequestValue {
     }
 }
 
+impl<const N: usize> From<[i32; N]> for RequestValue {
+    fn from(value: [i32; N]) -> Self {
+        RequestValue::IntList(value.into_iter().map(|x| x as i64).collect())
+    }
+}
+
 impl From<Vec<u32>> for RequestValue {
     fn from(value: Vec<u32>) -> Self {
+        RequestValue::IntList(value.into_iter().map(|x| x as i64).collect())
+    }
+}
+
+impl<const N: usize> From<[u32; N]> for RequestValue {
+    fn from(value: [u32; N]) -> Self {
+        RequestValue::IntList(value.into_iter().map(|x| x as i64).collect())
+    }
+}
+
+impl From<Vec<usize>> for RequestValue {
+    fn from(value: Vec<usize>) -> Self {
+        RequestValue::IntList(value.into_iter().map(|x| x as i64).collect())
+    }
+}
+
+impl<const N: usize> From<[usize; N]> for RequestValue {
+    fn from(value: [usize; N]) -> Self {
         RequestValue::IntList(value.into_iter().map(|x| x as i64).collect())
     }
 }
