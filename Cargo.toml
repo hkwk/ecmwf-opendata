@@ -1,0 +1,20 @@
+[package]
+name = "ecmwf-opendata"
+version = "0.1.0"
+edition = "2024"
+description = "Rust client for ECMWF Open Data (MARS-like requests, URL resolution, and downloads including .index range selection)."
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["ecmwf", "opendata", "weather", "grib", "mars"]
+categories = ["science", "api-bindings"]
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+reqwest = { version = "0.12", features = ["blocking", "json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+url = "2"
+
+[dev-dependencies]
+tempfile = "3"
